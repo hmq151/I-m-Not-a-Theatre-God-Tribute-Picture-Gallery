@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【我不是戏神】红衣时刻 - 图库</title>
+    <style>
+        :root {
+            --red-primary: #8a0000; 
+            --red-bright: #ff1a1a;
+            --dark-bg: #0a0a0a;
+            --text-main: #e0e0e0;
+            --font-serif: 'Songti SC', 'SimSun', serif; 
+            --font-sans: 'Helvetica Neue', sans-serif;
+            --easing-snap: cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark-bg);
+            color: var(--text-main);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+        }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 900;
+            opacity: 0.07;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+        }
+
+        section {
+            padding: 5vh 5vw;
+            position: relative;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-serif);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .dramatic-title {
+            font-size: 4rem;
+            color: var(--text-main);
+            mix-blend-mode: exclusion;
+            position: relative;
+            margin-bottom: 3rem;
+            margin-left: max(5vw, 20px);
+            text-shadow: 2px 2px 0px var(--red-primary);
+        }
+
+        .dramatic-title::after {
+            content: '';
+            position: absolute;
+            bottom: 10px;
+            left: -20px;
+            width: 120%;
+            height: 15px;
+            background: var(--red-primary);
+            z-index: -1;
+            transform: skewX(-20deg);
+        }
+
+        /* 图库网格布局 - 一排3张 */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            padding: 0 5vw;
+            position: relative;
+            z-index: 2;
+        }
+
+        .gallery-item {
+            position: relative;
+            aspect-ratio: 1;
+            background: linear-gradient(135deg, #1a1a1a, #000);
+            border: 1px solid #333;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s var(--easing-snap), border-color 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--red-primary);
+            box-shadow: 0 10px 30px rgba(138, 0, 0, 0.4);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(110%);
+            transition: filter 0.5s var(--easing-snap), transform 0.5s var(--easing-snap);
+        }
+
+        .gallery-item:hover img {
+            filter: grayscale(0%) sepia(20%) saturate(150%) hue-rotate(-10deg);
+            transform: scale(1.1);
+        }
+
+        .gallery-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to bottom, transparent 0%, rgba(138, 0, 0, 0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .gallery-item:hover::before {
+            opacity: 1;
+        }
+
+        .img-number {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-family: var(--font-serif);
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.6);
+            background: rgba(0,0,0,0.6);
+            padding: 4px 8px;
+            border-left: 2px solid var(--red-primary);
+            z-index: 2;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s var(--easing-snap);
+        }
+
+        .gallery-item:hover .img-number {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 全屏查看模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            border: 1px solid #333;
+            box-shadow: 0 0 50px rgba(138, 0, 0, 0.3);
+        }
+
+        .modal-content img {
+            max-width: 100%;
+            max-height: 85vh;
+            display: block;
+            object-fit: contain;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            font-family: var(--font-sans);
+            opacity: 0.7;
+            transition: opacity 0.3s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+            color: var(--red-bright);
+        }
+
+        .modal-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(138, 0, 0, 0.8);
+            color: #fff;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            font-family: var(--font-serif);
+            transition: background 0.3s;
+        }
+
+        .modal-nav:hover {
+            background: var(--red-bright);
+        }
+
+        .modal-prev {
+            left: -60px;
+        }
+
+        .modal-next {
+            right: -60px;
+        }
+
+        .modal-caption {
+            position: absolute;
+            bottom: -40px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #999;
+            font-family: var(--font-serif);
+            font-size: 0.9rem;
+        }
+
+        /* 页脚 */
+        .footer {
+            padding: 50px 20px;
+            text-align: center;
+            background: #000;
+            margin-top: 50px;
+        }
+
+        .copyright-logo {
+            max-width: 200px;
+            filter: grayscale(100%);
+            transition: filter 0.3s;
+            mix-blend-mode: screen;
+        }
+        .copyright-logo:hover {
+            filter: grayscale(0%);
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 1024px) {
+            .gallery-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dramatic-title {
+                font-size: 2.5rem;
+            }
+            
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                padding: 0 4vw;
+            }
+
+            .modal-nav {
+                padding: 10px 15px;
+                font-size: 1.2rem;
+            }
+
+            .modal-prev {
+                left: 10px;
+            }
+
+            .modal-next {
+                right: 10px;
+            }
+
+            .modal-close {
+                top: -35px;
+                right: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .gallery-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .dramatic-title {
+                font-size: 2rem;
+                margin-left: 3vw;
+            }
+        }
+
+        /* 加载动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gallery-item {
+            animation: fadeIn 0.6s var(--easing-snap) forwards;
+            opacity: 0;
+        }
+
+        .gallery-item:nth-child(1) { animation-delay: 0.05s; }
+        .gallery-item:nth-child(2) { animation-delay: 0.1s; }
+        .gallery-item:nth-child(3) { animation-delay: 0.15s; }
+        .gallery-item:nth-child(4) { animation-delay: 0.2s; }
+        .gallery-item:nth-child(5) { animation-delay: 0.25s; }
+        .gallery-item:nth-child(6) { animation-delay: 0.3s; }
+        .gallery-item:nth-child(7) { animation-delay: 0.35s; }
+        .gallery-item:nth-child(8) { animation-delay: 0.4s; }
+        .gallery-item:nth-child(9) { animation-delay: 0.45s; }
+        .gallery-item:nth-child(10) { animation-delay: 0.5s; }
+        .gallery-item:nth-child(11) { animation-delay: 0.55s; }
+        .gallery-item:nth-child(12) { animation-delay: 0.6s; }
+        .gallery-item:nth-child(13) { animation-delay: 0.65s; }
+        .gallery-item:nth-child(14) { animation-delay: 0.7s; }
+    </style>
+</head>
+<body>
+
+    <div class="noise-overlay"></div>
+
+    <header>
+        <div style="padding: 20px; font-family:var(--font-serif); font-size: 12px; color: #666;">
+            THEATRE OF <br> THREE-NINE AUDIO DOMAIN
+        </div>
+    </header>
+
+    <section>
+        <h2 class="dramatic-title">图库 <span style="font-size:1rem; opacity:0.5; margin-left:10px;">/// GALLERY</span></h2>
+        
+        <div class="gallery-grid" id="gallery">
+            <!-- 图片将通过JS动态生成 -->
+        </div>
+    </section>
+
+    <!-- 全屏查看模态框 -->
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeModal()">&times;</span>
+            <button class="modal-nav modal-prev" onclick="changeImage(-1)">&#8249;</button>
+            <img id="modalImg" src="" alt="Gallery Image">
+            <button class="modal-nav modal-next" onclick="changeImage(1)">&#8250;</button>
+            <div class="modal-caption" id="modalCaption"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <h3 style="font-size: 0.8rem; margin-bottom: 20px; color: #444;">TECHNOLOGY SUPPORT</h3>
+        <img src="https://r2.xsimple-r2.com/files/491630/4774a1cf-2285-48e0-9d63-07c27708f57f.png" alt="迅星科技 XKUNXING KEJI" class="copyright-logo">
+        <br><br>
+        <p style="font-size: 10px; color: #333; font-family: var(--font-sans);">
+            DEVELOPED BY Xunxing Technology Studio | FAN MEMORIAL SITE | NOT AFFILIATED WITH THREE-NINE
+        </p>
+    </footer>
+
+    <script>
+        // 图片数据
+        const images = [
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/1609f1704d4ee9defb64150edc2c54463493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/2720a0775056bed3bd8bb04e369173cd3493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/2c85e11aca409dd0413ab8f3c1a09f093691005322726067.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/3c92e52d78c0b44ebd0ac0cbe2a24f743493114874431947.png",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/42be58fe9c87da5ca8506f257623cf833493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/76125a7fcfb217746247f24e849bad213691005322726067.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/92b553b73033ef956de89f9d35c619913493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/a566dfd7afcbf7152486032b0403473d3493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/a730c2d279f0f4dd00ba992c5d8255293493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/cd781e89ea69621ed0c3837a882c506d3493114874431947.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/d6e767bc7f4c353170b18e064ba3d6813691005322726067.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/d992a51c1fb02a03d3a2fbb7e7f617a93691005322726067.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/e0b607debafd88d2c941f1c552f94cdc3691005322726067.jpg",
+            "https://cdn.jsdelivr.net/gh/hmq151/I-m-Not-a-Theatre-God-Tribute@main/picture/ea747cea890b94f795c5710197999e783691005322726067.jpg"
+        ];
+
+        let currentIndex = 0;
+
+        // 生成图库
+        const gallery = document.getElementById('gallery');
+        images.forEach((url, index) => {
+            const item = document.createElement('div');
+            item.className = 'gallery-item';
+            item.onclick = () => openModal(index);
+            
+            item.innerHTML = `
+                <img src="${url}" alt="Image ${index + 1}" loading="lazy" onerror="this.parentElement.style.display='none'">
+                <div class="img-number">#${String(index + 1).padStart(2, '0')}</div>
+            `;
+            
+            gallery.appendChild(item);
+        });
+
+        // 模态框功能
+        function openModal(index) {
+            currentIndex = index;
+            const modal = document.getElementById('imageModal');
+            const img = document.getElementById('modalImg');
+            const caption = document.getElementById('modalCaption');
+            
+            img.src = images[index];
+            caption.textContent = `IMAGE ${index + 1} / ${images.length}`;
+            modal.classList.add('active');
+            
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function changeImage(direction) {
+            currentIndex += direction;
+            if (currentIndex < 0) currentIndex = images.length - 1;
+            if (currentIndex >= images.length) currentIndex = 0;
+            
+            const img = document.getElementById('modalImg');
+            const caption = document.getElementById('modalCaption');
+            
+            img.style.opacity = '0';
+            setTimeout(() => {
+                img.src = images[currentIndex];
+                caption.textContent = `IMAGE ${currentIndex + 1} / ${images.length}`;
+                img.style.opacity = '1';
+            }, 200);
+        }
+
+        // 键盘导航
+        document.addEventListener('keydown', (e) => {
+            if (!document.getElementById('imageModal').classList.contains('active')) return;
+            
+            if (e.key === 'Escape') closeModal();
+            if (e.key === 'ArrowLeft') changeImage(-1);
+            if (e.key === 'ArrowRight') changeImage(1);
+        });
+
+        // 点击背景关闭
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeModal();
+        });
+    </script>
+</body>
+</html>
